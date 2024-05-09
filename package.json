@@ -1,0 +1,28 @@
+{
+  "name": "strike-nwc-service",
+  "version": "0.1.0",
+  "description": "Nostr Wallet Connect service using Strike API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamSamskies/strike-nwc-service.git"
+  },
+  "keywords": [
+    "nostr",
+    "bitcoin",
+    "lightning",
+    "strike"
+  ],
+  "author": "Sam Samskies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/SamSamskies/strike-nwc-service/issues"
+  },
+  "homepage": "https://github.com/SamSamskies/strike-nwc-service#readme",
+  "dependencies": {
+    "nostr-tools": "2.5.2"
+  }
+}
