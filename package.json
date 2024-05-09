@@ -2,9 +2,10 @@
   "name": "strike-nwc-service",
   "version": "0.1.0",
   "description": "Nostr Wallet Connect service using Strike API",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error no test specified\" && exit 1",
+    "start": "node src/index.js",
     "generate-secret": "node src/scripts/generateSecret.js"
   },
   "repository": {
