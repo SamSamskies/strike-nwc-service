@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error no test specified\" && exit 1",
     "start": "node src/index.js",
-    "generate-secret": "node src/scripts/generateSecret.js"
+    "generate-secret": "node src/scripts/generateSecret.js",
+    "print-nwc": "node src/scripts/printNwcConnectionString.js"
   },
   "repository": {
     "type": "git",
@@ -25,6 +26,7 @@
   },
   "homepage": "https://github.com/SamSamskies/strike-nwc-service#readme",
   "dependencies": {
+    "dotenv": "16.4.5",
     "nostr-tools": "2.5.2"
   }
 }
