@@ -1,3 +1,5 @@
+const { getPublicKey } = require("nostr-tools/pure");
+
 require("dotenv").config();
 
 const STRIKE_API_KEY = process.env.STRIKE_API_KEY;
@@ -6,8 +8,9 @@ const NWC_SERVICE_PRIVKEY = process.env.NWC_SERVICE_PRIVKEY;
 const RELAY_URI = process.env.RELAY_URI;
 const AUTHORIZED_PUBKEY = process.env.AUTHORIZED_PUBKEY;
 const NWC_CONNECTION_SECRET = process.env.NWC_CONNECTION_SECRET;
-const TOTAL_MAX_SEND_AMOUNT_IN_SATS =
-  process.env.TOTAL_MAX_SEND_AMOUNT_IN_SATS ?? 10000;
+const TOTAL_MAX_SEND_AMOUNT_IN_SATS = process.env.TOTAL_MAX_SEND_AMOUNT_IN_SATS
+  ? Number(process.env.TOTAL_MAX_SEND_AMOUNT_IN_SATS)
+  : 10000;
 
 if (!STRIKE_API_KEY) {
   console.log("Missing STRIKE_API_KEY in .env file.");
@@ -48,9 +51,11 @@ if (!NWC_CONNECTION_SECRET) {
 module.exports = {
   STRIKE_API_KEY,
   STRIKE_SOURCE_CURRENCY,
+  NWC_SERVICE_PUBKEY: getPublicKey(NWC_SERVICE_PRIVKEY),
   NWC_SERVICE_PRIVKEY,
   RELAY_URI,
   AUTHORIZED_PUBKEY,
+  NWC_CONNECTION_PUBKEY: getPublicKey(NWC_CONNECTION_SECRET),
   NWC_CONNECTION_SECRET,
   TOTAL_MAX_SEND_AMOUNT_IN_SATS,
 };
