@@ -5,5 +5,5 @@ const {
 } = require("../constants");
 
 console.log(
-  `nostr+walletconnect:${NWC_SERVICE_PUBKEY}?relay=${RELAY_URI}&secret=${NWC_CONNECTION_SECRET}`,
+  `nostr+walletconnect://${NWC_SERVICE_PUBKEY}?relay=${RELAY_URI}&secret=${NWC_CONNECTION_SECRET}`,
 );
