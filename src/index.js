@@ -129,7 +129,7 @@ const handleNwcRequest = async (relay, event) => {
   }
 
   const invoice = nwcRequest?.params?.invoice;
-  const amountInSats = extractAmountInSats(invoice);
+  const amountInSats = invoice ? extractAmountInSats(invoice) : 0;
 
   if (
     errorCode === null &&
