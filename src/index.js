@@ -41,6 +41,11 @@ const start = async () => {
         handleNwcRequest(relay, event);
       },
     },
+    {
+      onclose(reason) {
+        console.log("Relay subscription closed: ", reason);
+      },
+    },
   );
 };
 
