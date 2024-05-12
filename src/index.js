@@ -119,6 +119,7 @@ const handleNwcRequest = async (relay, event) => {
 
   try {
     nwcRequest = await decryptNwcRequestContent(event.content);
+    console.log(nwcRequest);
 
     if (nwcRequest.method !== supportedResultTypes.payInvoice) {
       errorCode = NOT_IMPLEMENTED;
