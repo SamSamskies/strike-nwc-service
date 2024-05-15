@@ -16,9 +16,6 @@ const { payInvoice } = require("./strike");
 useWebSocketImplementation(require("ws"));
 
 let totalAmountSentInSats = 0;
-const supportedResultTypes = {
-  payInvoice: "pay_invoice",
-};
 const UNAUTHORIZED = "UNAUTHORIZED";
 const NOT_IMPLEMENTED = "NOT_IMPLEMENTED";
 const QUOTA_EXCEEDED = "QUOTA_EXCEEDED";
@@ -55,6 +52,7 @@ const decryptNwcRequestContent = async (eventContent) => {
       await decrypt(NWC_CONNECTION_SECRET, NWC_SERVICE_PUBKEY, eventContent),
     );
   } catch (err) {
+    console.error(`error decrypting NWC request: ${err}`);
     throw new Error(UNAUTHORIZED);
   }
 };
@@ -113,6 +111,27 @@ const extractAmountInSats = (invoice) => {
   );
 };
 
+const handlePayInvoiceRequest = async (nwcRequest) => {
+  const invoice = nwcRequest?.params?.invoice;
+  const amountInSats = invoice ? extractAmountInSats(invoice) : 0;
+
+  if (totalAmountSentInSats + amountInSats > TOTAL_MAX_SEND_AMOUNT_IN_SATS) {
+    throw new Error("QUOTA_EXCEEDED");
+  }
+
+  try {
+    await payInvoice(invoice);
+    totalAmountSentInSats = totalAmountSentInSats + amountInSats;
+    console.log(`successfully paid ${amountInSats} sats`);
+    console.log(
+      `total amount of sats sent since this wallet service has been running: ${totalAmountSentInSats}\n\n`,
+    );
+  } catch (err) {
+    console.error(`error making payment: ${err}`);
+    throw new Error(PAYMENT_FAILED);
+  }
+};
+
 const handleNwcRequest = async (relay, event) => {
   let errorCode = null;
   let nwcRequest = null;
@@ -121,34 +140,13 @@ const handleNwcRequest = async (relay, event) => {
     nwcRequest = await decryptNwcRequestContent(event.content);
     console.log(nwcRequest);
 
-    if (nwcRequest.method !== supportedResultTypes.payInvoice) {
+    if (nwcRequest.method === "pay_invoice") {
+      await handlePayInvoiceRequest(nwcRequest);
+    } else {
       errorCode = NOT_IMPLEMENTED;
     }
   } catch (err) {
-    console.error(`error decrypting NWC request: ${err}`);
-    errorCode = UNAUTHORIZED;
-  }
-
-  const invoice = nwcRequest?.params?.invoice;
-  const amountInSats = invoice ? extractAmountInSats(invoice) : 0;
-
-  if (
-    errorCode === null &&
-    totalAmountSentInSats + amountInSats > TOTAL_MAX_SEND_AMOUNT_IN_SATS
-  ) {
-    errorCode = QUOTA_EXCEEDED;
-  } else if (errorCode === null) {
-    try {
-      await payInvoice(invoice);
-      totalAmountSentInSats = totalAmountSentInSats + amountInSats;
-      console.log(`successfully paid ${amountInSats} sats`);
-      console.log(
-        `total amount of sats sent since this wallet service has been running: ${totalAmountSentInSats}\n\n`,
-      );
-    } catch (err) {
-      console.error(`error making payment: ${err}`);
-      errorCode = PAYMENT_FAILED;
-    }
+    errorCode = err.message;
   }
 
   try {
