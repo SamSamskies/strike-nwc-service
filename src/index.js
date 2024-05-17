@@ -11,18 +11,19 @@ const {
   NWC_SERVICE_PUBKEY,
   AUTHORIZED_PUBKEY,
 } = require("./constants");
-const { payInvoice, makeInvoice } = require("./strike");
+const { payInvoice, makeInvoice, lookupInvoice } = require("./strike");
 
 useWebSocketImplementation(require("ws"));
 
 let totalAmountSentInSats = 0;
-const createdInvoices = {};
+const cachedInvoiceResults = {};
 
 const UNAUTHORIZED = "UNAUTHORIZED";
 const NOT_IMPLEMENTED = "NOT_IMPLEMENTED";
 const QUOTA_EXCEEDED = "QUOTA_EXCEEDED";
 const PAYMENT_FAILED = "PAYMENT_FAILED";
 const INTERNAL = "INTERNAL";
+const NOT_FOUND = "NOT_FOUND";
 
 const start = async () => {
   const relay = await Relay.connect(RELAY_URI);
@@ -70,6 +71,8 @@ const getErrorMessage = ({ requestMethod, errorCode }) => {
       return `Payment would exceed max quota of ${TOTAL_MAX_SEND_AMOUNT_IN_SATS}.`;
     case PAYMENT_FAILED:
       return "Unable to complete payment.";
+    case NOT_FOUND:
+      return "Unable to find invoice.";
     default:
       return "Something unexpected happened.";
   }
@@ -162,11 +165,31 @@ const handleMakeInvoiceRequest = async (nwcRequestContent) => {
     };
 
     // cache result for lookup_invoice requests
-    createdInvoices[invoice] = result;
+    cachedInvoiceResults[invoice] = result;
 
     return result;
   } catch (err) {
     console.error(`error making invoice: ${err}`);
+    throw new Error(INTERNAL);
+  }
+};
+
+const handleLookupInvoiceRequest = async (nwcRequestContent) => {
+  const { invoice } = nwcRequestContent.params;
+  const cachedInvoiceResult = cachedInvoiceResults[invoice];
+
+  if (!cachedInvoiceResult) {
+    throw new Error(NOT_FOUND);
+  }
+
+  try {
+    const invoiceId = cachedInvoiceResult.metadata.invoice_id;
+
+    cachedInvoiceResult.metadata.state = await lookupInvoice(invoiceId);
+
+    return cachedInvoiceResult;
+  } catch (err) {
+    console.error(`error looking up invoice: ${err}`);
     throw new Error(INTERNAL);
   }
 };
@@ -184,6 +207,8 @@ const handleNwcRequest = async (relay, event) => {
       result = await handlePayInvoiceRequest(nwcRequestContent);
     } else if (nwcRequestContent.method === "make_invoice") {
       result = await handleMakeInvoiceRequest(nwcRequestContent);
+    } else if (nwcRequestContent.method === "lookup_invoice") {
+      result = await handleLookupInvoiceRequest(nwcRequestContent);
     } else {
       errorCode = NOT_IMPLEMENTED;
     }

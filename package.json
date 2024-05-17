@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "generate-secret": "node src/scripts/generateSecret.js",
     "print-nwc": "node src/scripts/printNwcConnectionString.js",
-    "broadcast-example-make-invoice-req": "node src/scripts/broadcastExampleMakeInvoiceRequest.js"
+    "broadcast-example-make-invoice-req": "node src/scripts/broadcastExampleMakeInvoiceRequest.js",
+    "broadcast-example-lookup-invoice-req": "node src/scripts/broadcastExampleLookupInvoiceRequest.js"
   },
   "repository": {
     "type": "git",

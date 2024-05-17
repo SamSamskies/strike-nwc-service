@@ -98,4 +98,20 @@ const makeInvoice = async ({ amountInMillisats, description }) => {
   return { invoiceId, invoice, state, createdAt, expiresAt };
 };
 
-module.exports = { payInvoice, makeInvoice };
+const lookupInvoice = async (invoiceId) => {
+  const {
+    data: { state },
+  } = await axios({
+    method: "get",
+    url: `https://api.strike.me/v1/invoices/${invoiceId}`,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${STRIKE_API_KEY}`,
+    },
+  });
+
+  return state;
+};
+
+module.exports = { payInvoice, makeInvoice, lookupInvoice };
