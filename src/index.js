@@ -11,15 +11,18 @@ const {
   NWC_SERVICE_PUBKEY,
   AUTHORIZED_PUBKEY,
 } = require("./constants");
-const { payInvoice } = require("./strike");
+const { payInvoice, makeInvoice } = require("./strike");
 
 useWebSocketImplementation(require("ws"));
 
 let totalAmountSentInSats = 0;
+const createdInvoices = {};
+
 const UNAUTHORIZED = "UNAUTHORIZED";
 const NOT_IMPLEMENTED = "NOT_IMPLEMENTED";
 const QUOTA_EXCEEDED = "QUOTA_EXCEEDED";
 const PAYMENT_FAILED = "PAYMENT_FAILED";
+const INTERNAL = "INTERNAL";
 
 const start = async () => {
   const relay = await Relay.connect(RELAY_URI);
@@ -72,7 +75,12 @@ const getErrorMessage = ({ requestMethod, errorCode }) => {
   }
 };
 
-const makeNwcResponseEvent = async ({ eventId, requestMethod, errorCode }) => {
+const makeNwcResponseEvent = async ({
+  eventId,
+  requestMethod,
+  result,
+  errorCode,
+}) => {
   const content = { result_type: requestMethod };
 
   if (errorCode) {
@@ -81,9 +89,7 @@ const makeNwcResponseEvent = async ({ eventId, requestMethod, errorCode }) => {
       message: getErrorMessage({ requestMethod, errorCode }),
     };
   } else {
-    content.result = {
-      preimage: "gfy",
-    };
+    content.result = result;
   }
   const encryptedContent = await encrypt(
     NWC_CONNECTION_SECRET,
@@ -100,6 +106,8 @@ const makeNwcResponseEvent = async ({ eventId, requestMethod, errorCode }) => {
     ],
   };
 
+  console.log(content);
+
   return finalizeEvent(eventTemplate, NWC_CONNECTION_SECRET);
 };
 
@@ -111,8 +119,8 @@ const extractAmountInSats = (invoice) => {
   );
 };
 
-const handlePayInvoiceRequest = async (nwcRequest) => {
-  const invoice = nwcRequest?.params?.invoice;
+const handlePayInvoiceRequest = async (nwcRequestContent) => {
+  const invoice = nwcRequestContent.params?.invoice;
   const amountInSats = invoice ? extractAmountInSats(invoice) : 0;
 
   if (totalAmountSentInSats + amountInSats > TOTAL_MAX_SEND_AMOUNT_IN_SATS) {
@@ -126,22 +134,56 @@ const handlePayInvoiceRequest = async (nwcRequest) => {
     console.log(
       `total amount of sats sent since this wallet service has been running: ${totalAmountSentInSats}\n\n`,
     );
+
+    return { preimage: "gfy" };
   } catch (err) {
     console.error(`error making payment: ${err}`);
     throw new Error(PAYMENT_FAILED);
   }
 };
 
-const handleNwcRequest = async (relay, event) => {
-  let errorCode = null;
-  let nwcRequest = null;
+const handleMakeInvoiceRequest = async (nwcRequestContent) => {
+  const { amount, description } = nwcRequestContent.params;
 
   try {
-    nwcRequest = await decryptNwcRequestContent(event.content);
-    console.log(nwcRequest);
+    const { invoiceId, invoice, state, createdAt, expiresAt } =
+      await makeInvoice({
+        amountInMillisats: amount,
+        description,
+      });
+    const result = {
+      type: "incoming",
+      invoice,
+      description,
+      amount,
+      created_at: createdAt,
+      expires_at: expiresAt,
+      metadata: { state },
+    };
 
-    if (nwcRequest.method === "pay_invoice") {
-      await handlePayInvoiceRequest(nwcRequest);
+    // cache result for lookup_invoice requests
+    createdInvoices[invoiceId] = result;
+
+    return result;
+  } catch (err) {
+    console.error(`error making invoice: ${err}`);
+    throw new Error(INTERNAL);
+  }
+};
+
+const handleNwcRequest = async (relay, event) => {
+  let errorCode = null;
+  let result = null;
+  let nwcRequestContent = null;
+
+  try {
+    nwcRequestContent = await decryptNwcRequestContent(event.content);
+    console.log(nwcRequestContent);
+
+    if (nwcRequestContent.method === "pay_invoice") {
+      result = await handlePayInvoiceRequest(nwcRequestContent);
+    } else if (nwcRequestContent.method === "make_invoice") {
+      result = await handleMakeInvoiceRequest(nwcRequestContent);
     } else {
       errorCode = NOT_IMPLEMENTED;
     }
@@ -150,13 +192,15 @@ const handleNwcRequest = async (relay, event) => {
   }
 
   try {
-    relay.publish(
-      await makeNwcResponseEvent({
-        eventId: event.id,
-        requestMethod: nwcRequest?.method ?? "unknown",
-        errorCode,
-      }),
-    );
+    const nwcResponse = await makeNwcResponseEvent({
+      eventId: event.id,
+      requestMethod: nwcRequestContent?.method ?? "unknown",
+      result,
+      errorCode,
+    });
+    console.log("NWC response:", nwcResponse);
+
+    relay.publish(nwcResponse);
   } catch (err) {
     console.error("failed to publish NWC response", err);
   }

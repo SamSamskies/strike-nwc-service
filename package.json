@@ -7,7 +7,8 @@
     "test": "echo \"Error no test specified\" && exit 1",
     "start": "node src/index.js",
     "generate-secret": "node src/scripts/generateSecret.js",
-    "print-nwc": "node src/scripts/printNwcConnectionString.js"
+    "print-nwc": "node src/scripts/printNwcConnectionString.js",
+    "broadcast-example-make-invoice-req": "node src/scripts/broadcastExampleMakeInvoiceRequest.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
   "homepage": "https://github.com/SamSamskies/strike-nwc-service#readme",
   "dependencies": {
     "axios": "1.6.8",
+    "big.js": "^6.2.1",
     "dotenv": "16.4.5",
     "light-bolt11-decoder": "3.1.1",
     "nostr-tools": "2.5.2",
