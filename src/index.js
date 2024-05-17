@@ -158,11 +158,11 @@ const handleMakeInvoiceRequest = async (nwcRequestContent) => {
       amount,
       created_at: createdAt,
       expires_at: expiresAt,
-      metadata: { state },
+      metadata: { state, invoice_id: invoiceId },
     };
 
     // cache result for lookup_invoice requests
-    createdInvoices[invoiceId] = result;
+    createdInvoices[invoice] = result;
 
     return result;
   } catch (err) {
