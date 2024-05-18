@@ -23,6 +23,6 @@ Nostr Wallet Connect service using Strike API.
 1. Create a .env file with all the required env variables (see .env.example)
 1. Make sure you have money in your Strike account
 1. Print your NWC connection by running `npm run print-nwc` and copy it into whatever Nostr client you'd like to use to make payments
-1. Run the server `npm start`
+1. Run the server `npm start`. If you have [pm2](https://pm2.keymetrics.io/) installed, start the server by running `pm2 start src/index.js` instead of `npm start`.
 
 Make sure the server is running whenever making payments.
