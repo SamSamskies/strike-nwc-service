@@ -29,6 +29,10 @@ const start = async () => {
   const relay = await Relay.connect(RELAY_URI);
   console.log(`connected to ${RELAY_URI}`);
 
+  relay.onclose = () => {
+    console.log("Relay connection closed.");
+  };
+
   relay.subscribe(
     [
       {
